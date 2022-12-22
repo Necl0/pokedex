@@ -79,7 +79,7 @@ async def on_message(message):
                     embed.color = discord.Color.dark_grey()
                 elif match.group(1) == 'steel':
                     embed.color = discord.Color.dark_grey()
-
+            
             embed.add_field(name="Stats", value=f"""
                                                 HP: {p_json['stats'][0]['base_stat']}
                                                 Attack: {p_json['stats'][1]['base_stat']}
@@ -91,12 +91,21 @@ async def on_message(message):
             embed.add_field(name="Abilities", value='\n'.join([a['ability']['name'].title() for a in p_json['abilities']]), inline=False)
             embed.add_field(name="Moves", value='\n'.join([m['move']['name'].title() for m in p_json['moves'][:5]]), inline=False)
 
+
             embed.set_image(url=sprite)
             embed.set_footer(text="Made by @Neclo#5545")
             await message.channel.send(embed=embed)
 
             return
 
+    elif message.content.startswith('!help'):
+        await message.channel.send('!p <pokemon name>')
+    elif message.content.startswith('!about'):
+        await message.channel.send('Pokedex Discord bot.\nMade by Neclo#5545')
+    elif message.content.startswith('!invite'):
+        await message.channel.send('https://discord.com/api/oauth2/authorize?client_id=1053883092684783748&permissions=8&scope=bot')
+    elif message.content.startswith('!github'):
+        await message.channel.send('https://github.com/Necl0/pokedex')
 
 client.run('token')
 
