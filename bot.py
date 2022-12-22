@@ -156,7 +156,7 @@ async def spawner():
 
 
 
-client.run('MTA1Mzg4MzA5MjY4NDc4Mzc0OA.GNrBg6.Yj2Av5LkPG5aTQTo7cLHALBmfd3nHQla8XE1Zk')
+client.run('token')
 
 
 
