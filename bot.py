@@ -236,7 +236,7 @@ async def spawner():
 async def catch_poke():
     pass
 
-client.run('MTA1Mzg4MzA5MjY4NDc4Mzc0OA.GDsdHD.lldBOd5IGLVDNLYv9yBk05iN65ptc0q_tmpBVg')
+client.run('token')
 
 
 
