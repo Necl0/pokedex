@@ -4,13 +4,62 @@ import requests
 import random
 import asyncio
 import json
+import datetime
+import uuid
 
 from discord.ext import tasks
+from pydantic import BaseModel, validator, ValidationError, conint, constr, confloat
+from typing import Literal, Optional, Union, Annotated
+from uuid import UUID
+
+
+class Pokemon(BaseModel):
+    num: conint(ge=1, le=898)
+    id: UUID
+    level: conint(ge=1, le=100)
+    name: str
+    sprite: str
+    types: Literal['fire', 'water', 'grass', 'bug', 'normal', 'poison', 'electric', 'ground', 'fairy', 'fighting',
+                   'psychic', 'rock', 'ghost', 'ice', 'dragon', 'dark', 'steel', 'flying']
+    atk: Annotated[int, conint(ge=1, le=255)]
+    _def: Annotated[int, conint(ge=1, le=255)]
+    satk: Annotated[int, conint(ge=1, le=255)]
+    sdef: Annotated[int, conint(ge=1, le=255)]
+    spd: Annotated[int, conint(ge=1, le=255)]
+    hp: Annotated[int, conint(ge=1, le=255)]
+    weight: Annotated[int, confloat(ge=0.2, le=9999.9)]
+    height: Annotated[int, confloat(ge=0.2, le=9999.9)]
+    abilities: Optional[list[str]] = None
+    moves: Optional[list[str]] = None
+
+    def return_json(self):
+        # return each parameter in json
+        return {
+            "num": self.num,
+            "id": self.id,
+            "level": self.level,
+            "name": self.name,
+            "sprite": self.sprite,
+            "types": self.types,
+            "atk": self.atk,
+            "_def": self._def,
+            "satk": self.satk,
+            "sdef": self.sdef,
+            "spd": self.spd,
+            "hp": self.hp,
+            "weight": self.weight,
+            "height": self.height,
+            "abilities": self.abilities,
+            "moves": self.moves
+
+        }
+
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
+
 
 def get_poke(name):
     url = f'https://pokeapi.co/api/v2/pokemon/{name}'
@@ -19,6 +68,7 @@ def get_poke(name):
         return response.json()
     else:
         return None
+
 
 @client.event
 async def on_ready():
@@ -51,10 +101,11 @@ async def on_message(message):
             return
         else:
             sprite = p_json['sprites']['front_default']
+            print(type(sprite))
             name = p_json['name']
             types = [t['type']['name'] + ", " for t in p_json['types'][:-1]] + [p_json['types'][-1]['type']['name']]
 
-            embed = discord.Embed(title=name.title(), description=f"Types: {' '.join(types).title()}\nWeight: {p_json['weight']}\nHeight: {p_json['height']}")
+            embed = discord.Embed(title=name.title(), description=f"Types: {' '.join(types).title()}\nWeight: {p_json['weight']} lb\nHeight: {p_json['height']/10} m")
 
             match = re.search(r'(fire|water|grass|bug|normal|poison|electric|ground|fairy|fighting|psychic|rock|ghost|ice|dragon|dark|steel)', ' '.join(types).lower())
 
@@ -128,7 +179,27 @@ async def on_message(message):
 
 
 async def poke_spawn():
-    p_json = get_poke(random.randint(1, 898))
+    num = random.randint(1, 898)
+    p_json = get_poke(num)
+
+    poke = Pokemon(
+        num=num,
+        id=str(uuid.uuid4()),
+        level=random.randint(1, 100),
+        name=p_json['name'],
+        sprit=p_json['sprites']['front_default'],
+        types=[t['type']['name'] for t in p_json['types']],
+        atk=p_json['stats'][1]['base_stat'],
+        _def=p_json['stats'][2]['base_stat'],
+        satk=p_json['stats'][3]['base_stat'],
+        sdef=p_json['stats'][4]['base_stat'],
+        spd=p_json['stats'][5]['base_stat'],
+        hp=p_json['stats'][0]['base_stat'],
+        weight=p_json['weight'],
+        height=p_json['height'],
+        abilities=[a['ability']['name'] for a in p_json['abilities']],
+        moves=[m['move']['name'] for m in p_json['moves'][:5]]
+    )
 
     # get the channel to send the message to
     with open('channel.json', 'r') as f:
@@ -136,12 +207,17 @@ async def poke_spawn():
 
     channel = client.get_channel(int(channel_id))
     poke_embed = discord.Embed(title=p_json['name'].title(), description="A wild pokemon has spawned! Type !p <pokemon name> to catch it!")
-    poke_embed.set_image(url=p_json['sprites']['front_default'])
+    poke_embed.set_image(url=poke.sprite)
     poke_embed.set_footer(text="Made by @Neclo#5545")
 
     await channel.send(embed=poke_embed)
-    await asyncio.sleep(5)
-    await channel.send(f"The pokemon disappeared. It's a {p_json['name'].title()}!")
+    t = datetime.datetime.now()
+
+    # set a stopwatch for 15 seconds
+
+    await asyncio.sleep(15)
+    await channel.send(f"The pokemon disappeared. It was a {poke.name}!")
+
 
 @tasks.loop(seconds=10)
 async def spawner():
@@ -150,13 +226,17 @@ async def spawner():
 
     channel = client.get_channel(int(channel_id))
     chance = random.randint(1, 100)
+
     if chance == 1:
+        # print current time
+        print(f"Spawning at {datetime.datetime.now()}")
         await poke_spawn()
 
 
+async def catch_poke():
+    pass
 
-
-client.run('token')
+client.run('MTA1Mzg4MzA5MjY4NDc4Mzc0OA.GDsdHD.lldBOd5IGLVDNLYv9yBk05iN65ptc0q_tmpBVg')
 
 
 
