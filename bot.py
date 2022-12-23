@@ -5,24 +5,23 @@ import random
 import asyncio
 import json
 import datetime
-import uuid
+import string
 
 from discord.ext import tasks
 from pydantic import BaseModel, validator, ValidationError, conint, constr, confloat
 from typing import Literal, Optional, Union, Annotated
-from uuid import UUID
 
 
 class Pokemon(BaseModel):
     num: conint(ge=1, le=898)
-    id: UUID
+    id: str
     level: conint(ge=1, le=100)
     name: str
     sprite: str
     types: list[Literal['fire', 'water', 'grass', 'bug', 'normal', 'poison', 'electric', 'ground', 'fairy', 'fighting',
                    'psychic', 'rock', 'ghost', 'ice', 'dragon', 'dark', 'steel', 'flying']]
     atk: Annotated[int, conint(ge=1, le=255)]
-    _def: Annotated[int, conint(ge=1, le=255)]
+    d: Annotated[int, conint(ge=1, le=255)]
     satk: Annotated[int, conint(ge=1, le=255)]
     sdef: Annotated[int, conint(ge=1, le=255)]
     spd: Annotated[int, conint(ge=1, le=255)]
@@ -42,7 +41,7 @@ class Pokemon(BaseModel):
             "sprite": self.sprite,
             "types": self.types,
             "atk": self.atk,
-            "_def": self._def,
+            "def": self.d,
             "satk": self.satk,
             "sdef": self.sdef,
             "spd": self.spd,
@@ -183,13 +182,13 @@ async def poke_spawn():
 
     poke = Pokemon(
         num=num,
-        id=str(uuid.uuid4()),
+        id=''.join(random.choices(string.ascii_letters + string.digits, k=20)),
         level=random.randint(1, 100),
         name=p_json['name'],
         sprite=p_json['sprites']['front_default'],
         types=[t['type']['name'] for t in p_json['types']],
         atk=p_json['stats'][1]['base_stat'],
-        _def=p_json['stats'][2]['base_stat'],
+        d=p_json['stats'][2]['base_stat'],
         satk=p_json['stats'][3]['base_stat'],
         sdef=p_json['stats'][4]['base_stat'],
         spd=p_json['stats'][5]['base_stat'],
@@ -205,21 +204,17 @@ async def poke_spawn():
         channel_id = json.load(f)['id']
 
     channel = client.get_channel(int(channel_id))
-    poke_embed = discord.Embed(title="", description="A wild pokemon has spawned! Type !p <pokemon name> to catch it!")
+    poke_embed = discord.Embed(title="", description="A wild pokemon has spawned! Type **<pokemon name>** to catch it!")
     poke_embed.set_image(url=poke.sprite)
     poke_embed.set_footer(text="Made by @Neclo#5545")
 
     await channel.send(embed=poke_embed)
-    t = datetime.datetime.now()
-
-    await asyncio.sleep(15)
-
-    await channel.send(f"The pokemon disappeared. It was a lvl {poke.level} {poke.name}!")
+    await timer(poke.name, poke.level, poke)
 
 
 @tasks.loop(seconds=10)
 async def spawner():
-    chance = random.randint(1, 100)
+    chance = random.randint(1, 3)
 
     if chance == 1:
         # print current time
@@ -227,8 +222,36 @@ async def spawner():
         await poke_spawn()
 
 
-async def catch_poke():
-    pass
+async def timer(name, lvl, poke):
+    with open('channel.json', 'r') as f:
+        channel_id = json.load(f)['id']
+
+    channel = client.get_channel(int(channel_id))
+
+    def check(m):
+        return m.content == name.lower().strip() and m.channel.id == int(channel_id)
+
+    try:
+        msg = await client.wait_for('message', timeout=15.0, check=check)
+        await msg.channel.send(f"{msg.author.mention} caught the pokemon!")
+        await catch_poke(poke, msg.author.id)
+    except asyncio.TimeoutError:
+        await channel.send(f"The pokemon ran away! It was a **level {lvl}** {name}!")
+
+
+async def catch_poke(poke, user_id):
+    # add the pokemon to the user's collection
+    with open('data.json', 'r') as f:
+        users = json.load(f)
+
+    if str(user_id) not in users:
+        users[str(user_id)] = []
+
+    users[str(user_id)].append(poke.return_json())
+
+    with open('data.json', 'w') as f:
+        json.dump(users, f)
+
 
 client.run('token')
 
