@@ -19,8 +19,8 @@ class Pokemon(BaseModel):
     level: conint(ge=1, le=100)
     name: str
     sprite: str
-    types: Literal['fire', 'water', 'grass', 'bug', 'normal', 'poison', 'electric', 'ground', 'fairy', 'fighting',
-                   'psychic', 'rock', 'ghost', 'ice', 'dragon', 'dark', 'steel', 'flying']
+    types: list[Literal['fire', 'water', 'grass', 'bug', 'normal', 'poison', 'electric', 'ground', 'fairy', 'fighting',
+                   'psychic', 'rock', 'ghost', 'ice', 'dragon', 'dark', 'steel', 'flying']]
     atk: Annotated[int, conint(ge=1, le=255)]
     _def: Annotated[int, conint(ge=1, le=255)]
     satk: Annotated[int, conint(ge=1, le=255)]
@@ -89,7 +89,6 @@ async def on_message(message):
             json.dump({'id': id}, f)
 
         await message.channel.send('Spawn channel set!')
-
 
     elif message.content.startswith('!p'):
         name = message.content.split(' ')[1].lower().strip()
@@ -187,7 +186,7 @@ async def poke_spawn():
         id=str(uuid.uuid4()),
         level=random.randint(1, 100),
         name=p_json['name'],
-        sprit=p_json['sprites']['front_default'],
+        sprite=p_json['sprites']['front_default'],
         types=[t['type']['name'] for t in p_json['types']],
         atk=p_json['stats'][1]['base_stat'],
         _def=p_json['stats'][2]['base_stat'],
@@ -195,8 +194,8 @@ async def poke_spawn():
         sdef=p_json['stats'][4]['base_stat'],
         spd=p_json['stats'][5]['base_stat'],
         hp=p_json['stats'][0]['base_stat'],
-        weight=p_json['weight'],
-        height=p_json['height'],
+        weight=float(p_json['weight']),
+        height=float(p_json['height']),
         abilities=[a['ability']['name'] for a in p_json['abilities']],
         moves=[m['move']['name'] for m in p_json['moves'][:5]]
     )
@@ -206,25 +205,20 @@ async def poke_spawn():
         channel_id = json.load(f)['id']
 
     channel = client.get_channel(int(channel_id))
-    poke_embed = discord.Embed(title=p_json['name'].title(), description="A wild pokemon has spawned! Type !p <pokemon name> to catch it!")
+    poke_embed = discord.Embed(title="", description="A wild pokemon has spawned! Type !p <pokemon name> to catch it!")
     poke_embed.set_image(url=poke.sprite)
     poke_embed.set_footer(text="Made by @Neclo#5545")
 
     await channel.send(embed=poke_embed)
     t = datetime.datetime.now()
 
-    # set a stopwatch for 15 seconds
-
     await asyncio.sleep(15)
-    await channel.send(f"The pokemon disappeared. It was a {poke.name}!")
+
+    await channel.send(f"The pokemon disappeared. It was a lvl {poke.level} {poke.name}!")
 
 
 @tasks.loop(seconds=10)
 async def spawner():
-    with open('channel.json', 'r') as f:
-        channel_id = json.load(f)['id']
-
-    channel = client.get_channel(int(channel_id))
     chance = random.randint(1, 100)
 
     if chance == 1:
