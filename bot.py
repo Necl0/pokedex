@@ -3,10 +3,9 @@ import re
 import requests
 import random
 import asyncio
-import json
 import datetime
 import string
-import math
+import json
 from discord.ext import tasks
 from pydantic import BaseModel, conint, confloat
 from typing import Literal, Optional, Annotated
@@ -256,8 +255,8 @@ async def timer(name, lvl, poke):
         return m.content == name.lower().strip() and m.channel.id == int(channel_id)
 
     try:
-        msg = await client.wait_for('message', timeout=15.0, check=check)
-        await msg.channel.send(f"{msg.author.mention} caught the pokemon!")
+        msg = await client.wait_for('message', timeout=60.0, check=check)
+        await msg.channel.send(f"{msg.author.mention} caught the **level {lvl}** {name}!")
         await catch_poke(poke, msg.author.id)
     except asyncio.TimeoutError:
         await channel.send(f"The pokemon ran away! It was a **level {lvl}** {name}!")
@@ -280,7 +279,7 @@ async def catch_poke(poke, user_id):
     users[str(user_id)].append(poke.return_json())
 
     with open('data.json', 'w') as f:
-        json.dump(users, f)
+        json.dump(users, f, indent=4)
 
 
 def calculate_stat(stat, iv, ev, lvl, is_hp=False):
