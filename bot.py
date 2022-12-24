@@ -6,10 +6,10 @@ import asyncio
 import json
 import datetime
 import string
-
+import math
 from discord.ext import tasks
-from pydantic import BaseModel, validator, ValidationError, conint, constr, confloat
-from typing import Literal, Optional, Union, Annotated
+from pydantic import BaseModel, conint, confloat
+from typing import Literal, Optional, Annotated
 
 
 class Pokemon(BaseModel):
@@ -28,8 +28,13 @@ class Pokemon(BaseModel):
     hp: Annotated[int, conint(ge=1, le=255)]
     weight: Annotated[int, confloat(ge=0.2, le=9999.9)]
     height: Annotated[int, confloat(ge=0.2, le=9999.9)]
+    iv: Annotated[int, conint(ge=0, le=31)]
+    ev: Annotated[int, conint(ge=0, le=252)]
     abilities: Optional[list[str]] = None
     moves: Optional[list[str]] = None
+    nature: Optional[Literal['adamant', 'bashful', 'bold', 'brave', 'calm', 'careful', 'docile', 'gentle', 'hardy',
+                             'hasty', 'impish', 'jolly', 'lax', 'lonely', 'mild', 'modest', 'naive', 'naughty', 'quiet',
+                             'quirky', 'rash', 'relaxed', 'sassy', 'serious', 'timid']] = None
 
     def return_json(self):
         # return each parameter in json
@@ -48,8 +53,11 @@ class Pokemon(BaseModel):
             "hp": self.hp,
             "weight": self.weight,
             "height": self.height,
+            "iv": self.iv,
+            "ev": self.ev,
             "abilities": self.abilities,
-            "moves": self.moves
+            "moves": self.moves,
+            "nature": self.nature
 
         }
 
@@ -99,10 +107,8 @@ async def on_message(message):
             return
         else:
             sprite = p_json['sprites']['front_default']
-            print(type(sprite))
             name = p_json['name']
             types = [t['type']['name'] + ", " for t in p_json['types'][:-1]] + [p_json['types'][-1]['type']['name']]
-
             embed = discord.Embed(title=name.title(), description=f"Types: {' '.join(types).title()}\nWeight: {p_json['weight']} lb\nHeight: {p_json['height']/10} m")
 
             match = re.search(r'(fire|water|grass|bug|normal|poison|electric|ground|fairy|fighting|psychic|rock|ghost|ice|dragon|dark|steel)', ' '.join(types).lower())
@@ -172,8 +178,21 @@ async def on_message(message):
         await message.channel.send('https://discord.com/api/oauth2/authorize?client_id=1053883092684783748&permissions=8&scope=bot')
     elif message.content.startswith('!github'):
         await message.channel.send('https://github.com/Necl0/pokedex')
-    elif message.content.startswith('!spawn'):
-        await poke_spawn()
+    elif message.content.startswith('!list'):
+        # list all user's pokemon in embed format
+        with open('data.json', 'r') as f:
+            users = json.load(f)
+
+        if str(message.author.id) not in users:
+            return None
+
+        poke_list = users[str(message.author.id)]
+        poke_embed = discord.Embed(title="", description="Your pokemon:")
+        for poke in poke_list:
+            poke_embed.add_field(name=f"(lvl {poke['level']}) {poke['name'].title()}", value=f"", inline=False)
+
+        poke_embed.set_footer(text="Made by @Neclo#5545")
+        await message.channel.send(embed=poke_embed)
 
 
 async def poke_spawn():
@@ -195,8 +214,13 @@ async def poke_spawn():
         hp=p_json['stats'][0]['base_stat'],
         weight=float(p_json['weight']),
         height=float(p_json['height']),
+        iv=random.randint(1, 31),
+        ev=random.randint(1, 255),
         abilities=[a['ability']['name'] for a in p_json['abilities']],
-        moves=[m['move']['name'] for m in p_json['moves'][:5]]
+        moves=[m['move']['name'] for m in p_json['moves'][:5]],
+        nature=random.choice(['hardy', 'lonely', 'brave', 'adamant', 'naughty', 'bold', 'docile', 'relaxed', 'impish',
+                              'lax', 'timid', 'hasty', 'serious', 'jolly', 'naive', 'modest', 'mild', 'quiet',
+                              'bashful', 'rash', 'calm', 'gentle', 'sassy', 'careful', 'quirky'])
     )
 
     # get the channel to send the message to
@@ -240,17 +264,28 @@ async def timer(name, lvl, poke):
 
 
 async def catch_poke(poke, user_id):
-    # add the pokemon to the user's collection
     with open('data.json', 'r') as f:
         users = json.load(f)
 
     if str(user_id) not in users:
         users[str(user_id)] = []
 
+    poke.hp = calculate_stat(poke.hp, poke.iv, poke.ev, poke.level, True)
+    poke.atk = calculate_stat(poke.atk, poke.iv, poke.ev, poke.level)
+    poke.d = calculate_stat(poke.d, poke.iv, poke.ev, poke.level)
+    poke.satk = calculate_stat(poke.satk, poke.iv, poke.ev, poke.level)
+    poke.sdef = calculate_stat(poke.sdef, poke.iv, poke.ev, poke.level)
+    poke.spd = calculate_stat(poke.spd, poke.iv, poke.ev, poke.level)
+
     users[str(user_id)].append(poke.return_json())
 
     with open('data.json', 'w') as f:
         json.dump(users, f)
+
+
+def calculate_stat(stat, iv, ev, lvl, is_hp=False):
+    return int((((2 * stat + iv + (ev / 4)) * lvl) / 100) + lvl + 10) if is_hp else int(
+        (((2 * stat + iv + (ev / 4)) * lvl) / 100) + 5)
 
 
 client.run('token')
