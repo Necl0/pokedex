@@ -9,7 +9,7 @@ import json
 from discord.ext import tasks
 from pydantic import BaseModel, conint, confloat
 from typing import Literal, Optional, Annotated
-
+import atexit
 
 class Pokemon(BaseModel):
     num: conint(ge=1, le=898)
@@ -237,7 +237,7 @@ async def poke_spawn():
 
 @tasks.loop(seconds=10)
 async def spawner():
-    chance = random.randint(1, 3)
+    chance = random.randint(1, 100)
 
     if chance == 1:
         # print current time
@@ -287,6 +287,11 @@ def calculate_stat(stat, iv, ev, lvl, is_hp=False):
         (((2 * stat + iv + (ev / 4)) * lvl) / 100) + 5)
 
 
+@atexit.register
+def goodbye():
+    print("Pokedex is shutting down...")
+
+    
 client.run('token')
 
 
