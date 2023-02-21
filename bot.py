@@ -11,6 +11,7 @@ from pydantic import BaseModel, conint, confloat
 from typing import Literal, Optional, Annotated
 import atexit
 
+
 class Pokemon(BaseModel):
     num: conint(ge=1, le=898)
     id: str
@@ -283,16 +284,15 @@ async def catch_poke(poke, user_id):
 
 
 def calculate_stat(stat, iv, ev, lvl, is_hp=False):
-    return int((((2 * stat + iv + (ev / 4)) * lvl) / 100) + lvl + 10) if is_hp else int(
-        (((2 * stat + iv + (ev / 4)) * lvl) / 100) + 5)
+    return int((((2 * stat + iv + (ev / 4)) * lvl) / 100) + lvl*is_hp + 5+(5*is_hp))
 
 
 @atexit.register
 def goodbye():
     print("Pokedex is shutting down...")
 
-    
-client.run('token')
+
+client.run('MTA1Mzg4MzA5MjY4NDc4Mzc0OA.G_QxvH.I1c7x7ASTTF26nH7eVuysO_rl80bizEoUJsCsM')
 
 
 
