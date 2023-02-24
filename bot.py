@@ -270,22 +270,15 @@ async def catch_poke(poke, user_id):
     if str(user_id) not in users:
         users[str(user_id)] = []
 
-    poke.hp = calculate_stat(poke.hp, poke.iv, poke.ev, poke.level, True)
-    poke.atk = calculate_stat(poke.atk, poke.iv, poke.ev, poke.level)
-    poke.d = calculate_stat(poke.d, poke.iv, poke.ev, poke.level)
-    poke.satk = calculate_stat(poke.satk, poke.iv, poke.ev, poke.level)
-    poke.sdef = calculate_stat(poke.sdef, poke.iv, poke.ev, poke.level)
-    poke.spd = calculate_stat(poke.spd, poke.iv, poke.ev, poke.level)
+    poke.hp, poke.atk, poke.d, poke.satk, poke.sdef, poke.spd = [
+        int((2 * getattr(poke, s) + poke.iv + poke.ev / 4) * poke.level / 100 + 5 + 5 * (s == 'hp') + poke.level * (s == 'hp'))
+        for s in ('hp', 'atk', 'd', 'satk', 'sdef', 'spd')
+    ]
 
     users[str(user_id)].append(poke.return_json())
 
     with open('data.json', 'w') as f:
         json.dump(users, f, indent=4)
-
-
-def calculate_stat(stat, iv, ev, lvl, is_hp=False):
-    return int((((2 * stat + iv + (ev / 4)) * lvl) / 100) + lvl*is_hp + 5+(5*is_hp))
-
 
 @atexit.register
 def goodbye():
@@ -293,6 +286,5 @@ def goodbye():
 
 
 client.run('token')
-
 
 
