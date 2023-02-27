@@ -19,7 +19,7 @@ class Pokemon(BaseModel):
     name: str
     sprite: str
     types: list[Literal['fire', 'water', 'grass', 'bug', 'normal', 'poison', 'electric', 'ground', 'fairy', 'fighting',
-                   'psychic', 'rock', 'ghost', 'ice', 'dragon', 'dark', 'steel', 'flying']]
+                        'psychic', 'rock', 'ghost', 'ice', 'dragon', 'dark', 'steel', 'flying']]
     atk: Annotated[int, conint(ge=1, le=255)]
     d: Annotated[int, conint(ge=1, le=255)]
     satk: Annotated[int, conint(ge=1, le=255)]
@@ -270,6 +270,7 @@ async def catch_poke(poke, user_id):
     if str(user_id) not in users:
         users[str(user_id)] = []
 
+    # Scales stat values based on level, IV, and EV
     poke.hp, poke.atk, poke.d, poke.satk, poke.sdef, poke.spd = [
         int((2 * getattr(poke, s) + poke.iv + poke.ev / 4) * poke.level / 100 + 5 + 5 * (s == 'hp') + poke.level * (s == 'hp'))
         for s in ('hp', 'atk', 'd', 'satk', 'sdef', 'spd')
@@ -280,11 +281,12 @@ async def catch_poke(poke, user_id):
     with open('data.json', 'w') as f:
         json.dump(users, f, indent=4)
 
+
 @atexit.register
 def goodbye():
     print("Pokedex is shutting down...")
 
 
-client.run('token')
+client.run('MTA1Mzg4MzA5MjY4NDc4Mzc0OA.GMEX6X.A8XEZya19jD_uquxu24MKz1foSPrXiEAF6iajc')
 
 
