@@ -287,6 +287,6 @@ def goodbye():
     print("Pokedex is shutting down...")
 
 
-client.run('MTA1Mzg4MzA5MjY4NDc4Mzc0OA.GMEX6X.A8XEZya19jD_uquxu24MKz1foSPrXiEAF6iajc')
+client.run('token')
 
 
