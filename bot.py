@@ -228,7 +228,7 @@ async def poke_spawn():
         channel_id = json.load(f)['id']
 
     channel = client.get_channel(int(channel_id))
-    poke_embed = discord.Embed(title="", description="A wild pokemon has spawned! Type **<pokemon name>** to catch it!")
+    poke_embed = discord.Embed(title="", description="A wild pokemon has spawned! Type **pokemon name** to catch it!")
     poke_embed.set_image(url=poke.sprite)
     poke_embed.set_footer(text="Made by @Neclo#5545")
 
@@ -253,7 +253,7 @@ async def timer(name, lvl, poke):
     channel = client.get_channel(int(channel_id))
 
     def check(m):
-        return m.content == name.lower().strip() and m.channel.id == int(channel_id)
+        return m.content.lower() == name.lower().strip() and m.channel.id == int(channel_id)
 
     try:
         msg = await client.wait_for('message', timeout=60.0, check=check)
