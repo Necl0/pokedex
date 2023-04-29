@@ -37,30 +37,7 @@ class Pokemon(BaseModel):
                              'quirky', 'rash', 'relaxed', 'sassy', 'serious', 'timid']] = None
 
     def return_json(self):
-        # return each parameter in json
-        return {
-            "num": self.num,
-            "id": self.id,
-            "level": self.level,
-            "name": self.name,
-            "sprite": self.sprite,
-            "types": self.types,
-            "atk": self.atk,
-            "def": self.d,
-            "satk": self.satk,
-            "sdef": self.sdef,
-            "spd": self.spd,
-            "hp": self.hp,
-            "weight": self.weight,
-            "height": self.height,
-            "iv": self.iv,
-            "ev": self.ev,
-            "abilities": self.abilities,
-            "moves": self.moves,
-            "nature": self.nature
-
-        }
-
+       return {k: v for k, v in vars(self).items()}
 
 intents = discord.Intents.default()
 intents.message_content = True
